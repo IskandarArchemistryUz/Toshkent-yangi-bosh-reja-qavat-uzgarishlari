@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archemistry Urban — Toshkent Qurilish Loyihalari 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #070b14;
+    --surface: #0d1525;
+    --surface2: #111e33;
+    --border: #1a2d4a;
+    --border2: #243d60;
+    --brand: #2d7fff;
+    --brand-dim: rgba(45,127,255,0.15);
+    --accent-red: #ff4757;
+    --accent-orange: #ff8c00;
+    --accent-yellow: #ffd700;
+    --accent-green: #22c55e;
+    --text: #e2eaf5;
+    --text2: #8ca0bc;
+    --card-bg: rgba(13,21,37,0.97);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .header-sub {
+    font-size: 10px;
+    color: var(--text2);
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+  }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .hstat { text-align: right; }
+  .hstat-val {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--brand);
+  }
+  .hstat-label {
+    font-size: 9px;
+    color: var(--text2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* LANG SWITCHER */
+  .lang-switcher {
+    display: flex;
+    gap: 3px;
+    background: var(--bg);
+    padding: 3px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .lang-btn {
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-family: 'Unbounded', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 9px;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .lang-btn.active {
+    background: var(--brand);
+    color: #fff;
+  }
+  .lang-btn:hover:not(.active) {
+    color: var(--brand);
+  }
+
+  /* MAIN LAYOUT */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 310px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 4px;
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .tab-btn.active {
+    color: var(--brand);
+    border-bottom-color: var(--brand);
+    background: var(--brand-dim);
+  }
+  .tab-content { display: none; flex: 1; overflow-y: auto; padding: 12px; }
+  .tab-content.active { display: block; }
+  .tab-content::-webkit-scrollbar { width: 3px; }
+  .tab-content::-webkit-scrollbar-track { background: transparent; }
+  .tab-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* LEGEND */
+  .legend-section { margin-bottom: 16px; }
+  .legend-title {
+    font-size: 9px;
+    color: var(--brand);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+    font-size: 11px;
+    color: var(--text);
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* FILTER CHIPS */
+  .filter-bar {
+    padding: 8px 12px;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+  .filter-chip {
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+  }
+  .filter-chip.active, .filter-chip:hover {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+  }
+
+  /* PROJECT LIST */
+  .project-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 7px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .project-item:hover { border-color: var(--brand); }
+  .project-item.active { border-color: var(--brand); background: var(--brand-dim); }
+  .proj-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .proj-num { font-size: 9px; color: var(--text2); }
+  .proj-qavatlar { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 700; }
+  .proj-location { font-size: 10px; color: var(--text); margin-bottom: 2px; font-weight: 600; }
+  .proj-name { font-size: 9px; color: var(--text2); line-height: 1.4; }
+
+  /* TOD CARDS */
+  .tod-card {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .tod-title {
+    font-size: 10px;
+    color: var(--brand);
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-family: 'Unbounded', sans-serif;
+  }
+  .tod-text { font-size: 10px; color: var(--text); line-height: 1.7; }
+  .tod-hl { color: var(--brand); font-weight: 700; }
+
+  /* POPUP */
+  .custom-popup .leaflet-popup-content-wrapper {
+    background: var(--card-bg);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+    padding: 0;
+  }
+  .custom-popup .leaflet-popup-tip { background: var(--card-bg); }
+  .custom-popup .leaflet-popup-content { margin: 0; min-width: 270px; }
+  .popup-header-bar {
+    padding: 8px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    border-radius: 6px 6px 0 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .qavatlar-big { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 900; }
+  .popup-inner { padding: 12px 14px; }
+  .popup-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .popup-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .popup-row:last-child { border-bottom: none; }
+  .popup-row span:last-child { color: var(--text); font-weight: 600; text-align: right; max-width: 160px; }
+  .popup-warning {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(255,71,87,0.1);
+    border: 1px solid rgba(255,71,87,0.3);
+    border-radius: 3px;
+    font-size: 9px;
+    color: #ff6b78;
+    line-height: 1.5;
+  }
+  .popup-ok {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 3px;
+    font-size: 9px;
+    color: #4ade80;
+    line-height: 1.5;
+  }
+
+  /* BOTTOM BAR */
+  .warning-bar {
+    background: rgba(255,71,87,0.07);
+    border-top: 1px solid rgba(255,71,87,0.2);
+    padding: 6px 20px;
+    font-size: 10px;
+    color: #ff8f99;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    letter-spacing: 0.03em;
+  }
+  .warning-dot {
+    width: 6px; height: 6px;
+    background: var(--accent-red);
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* BOUNDARY TOOLTIP */
+  .boundary-tooltip {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    box-shadow: 0 2px 8px rgba(45,127,255,0.4);
+  }
+  .boundary-tooltip::before { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="50" fill="#2d7fff"/>
+      <path d="M50 20 L82 75 H18 Z" fill="none" stroke="white" stroke-width="7" stroke-linejoin="round"/>
+      <path d="M50 20 L50 40" stroke="white" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="50" cy="30" r="5" fill="#2d7fff" stroke="white" stroke-width="3"/>
+    </svg>
+    <div>
+      <div class="header-title" id="h-title">ARCHEMISTRY URBAN · TOSHKENT 2026</div>
+      <div class="header-sub" id="h-sub">VMM 09/26/83/0188-son · 03.03.2026 · Qurilish loyihalari tahlili</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="hstat">
+      <div class="hstat-val">31</div>
+      <div class="hstat-label" id="hs-projects">Loyiha</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val">$16.28B</div>
+      <div class="hstat-label" id="hs-invest">Investitsiya</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val">2311</div>
+      <div class="hstat-label" id="hs-area">Ga yer</div>
+    </div>
+    <div class="lang-switcher">
+      <button class="lang-btn active" onclick="setLang('uz')">UZ</button>
+      <button class="lang-btn" onclick="setLang('ru')">RU</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <button class="tab-btn active" onclick="showTab('legend')" id="tab-btn-legend">LEGENDA</button>
+      <button class="tab-btn" onclick="showTab('projects')" id="tab-btn-projects">LOYIHALAR</button>
+      <button class="tab-btn" onclick="showTab('tod')" id="tab-btn-tod">TOD TAHLIL</button>
+    </div>
+
+    <!-- LEGENDA -->
+    <div class="tab-content active" id="tab-legend">
+      <div class="legend-section">
+        <div class="legend-title" id="leg-floors-title">Qavatlar bo'yicha zonalar</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div><span id="leg-1">1–12 qavat — Optimal (TOD me'yori)</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffd700"></div><span id="leg-2">13–20 qavat — Yuqori zichlik</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff8c00"></div><span id="leg-3">21–30 qavat — Haddan ziyod</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff4757"></div><span id="leg-4">30+ qavat — Kritik zichlik</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div><span id="leg-5">Sanoat zonasi</span></div>
+      </div>
+      <div class="legend-section">
+        <div class="legend-title" id="leg-size-title">Belgi o'lchami</div>
+        <div style="font-size:10px; color:var(--text2); line-height:1.7;" id="leg-size-desc">
+          Doira kattaligi loyiha bahosiga (mln $) proporsional ravishda ko'rsatilgan
+        </div>
+      </div>
+      <div class="legend-section">
+        <div class="legend-title" id="leg-filter-title">Tuman filtri</div>
+        <div style="display:flex; flex-wrap:wrap; gap:4px;">
+          <button class="filter-chip active" onclick="filterTuman('all', this)" id="fc-all">BARCHASI</button>
+          <button class="filter-chip" onclick="filterTuman('Bektimir', this)">Bektimir</button>
+          <button class="filter-chip" onclick="filterTuman('Mirobod', this)">Mirobod</button>
+          <button class="filter-chip" onclick="filterTuman('Sergeli', this)">Sergeli</button>
+          <button class="filter-chip" onclick="filterTuman('Chilonzor', this)">Chilonzor</button>
+          <button class="filter-chip" onclick="filterTuman('Shayxontohur', this)">Shayxontohur</button>
+          <button class="filter-chip" onclick="filterTuman('Yashnobod', this)">Yashnobod</button>
+          <button class="filter-chip" onclick="filterTuman('Mirzo Ulug\'bek', this)">Mirzo Ulug'bek</button>
+          <button class="filter-chip" onclick="filterTuman('Olmazar', this)">Olmazar</button>
+          <button class="filter-chip" onclick="filterTuman('Yunusobod', this)">Yunusobod</button>
+          <button class="filter-chip" onclick="filterTuman('Yangihayet', this)">Yangihayet</button>
+          <button class="filter-chip" onclick="filterTuman('Uchtepa', this)">Uchtepa</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOYIHALAR -->
+    <div class="tab-content" id="tab-projects">
+      <div id="project-list"></div>
+    </div>
+
+    <!-- TOD TAHLIL -->
+    <div class="tab-content" id="tab-tod">
+
+      <div class="tod-card">
+        <div class="tod-title" id="tod1-title">⚡ TOD — OPTIMAL ZICHLIK NIMA?</div>
+        <div class="tod-text" id="tod1-text">
+          Tranzitga yo'naltirilgan rivojlanish (TOD) bo'yicha dunyo amaliyotida shahar uchun optimal aholi zichligi:<br><br>
+          <span class="tod-hl">10,000–17,000 kishi/km²</span><br><br>
+          Bu — Parij, Barselona shaharlar darajasi. Ushbu zichlikka <span class="tod-hl">7–12 qavatli</span> binolar bilan erishiladi. Odamlar piyoda yurib barcha xizmatlardan foydalana oladi, ko'cha hayoti jonli bo'ladi.
+        </div>
+      </div>
+
+      <div class="tod-card" style="border-color:rgba(255,71,87,0.3); background:rgba(255,71,87,0.05);">
+        <div class="tod-title" style="color:#ff6b78;" id="tod2-title">⚠️ MUAMMO: HADDAN ORTIQ ZICHLIK</div>
+        <div class="tod-text" id="tod2-text">
+          Toshkentdagi aksariyat loyihalarda <span style="color:#ff6b78; font-weight:700;">20–40 qavatli</span> binolar rejalashtirilgan. Bunday zichlik quyidagi muammolarga olib keladi:<br><br>
+          • Suv, elektr, yo'l infratuzilmasini ortiqcha yuklaydi<br>
+          • Yashil maydonlar va ochiq hududlar kamayadi<br>
+          • Quyosh yorug'ligi va shamol aylanishi cheklanadi<br>
+          • Ijtimoiy muhit va qo'shnichilik munosabati yomonlashadi<br>
+          • Yer osti suvlari va zilzila oqibatlari xavfi ortadi
+        </div>
+      </div>
+
+      <div class="tod-card" style="border-color:rgba(255,140,0,0.3); background:rgba(255,140,0,0.05);">
+        <div class="tod-title" style="color:#fb923c;" id="tod3-title">📊 SHAHAR BOSH REJASIGA O'ZGARTIRISHLAR</div>
+        <div class="tod-text" id="tod3-text">
+          Qabul qilingan qarorga ko'ra quyidagi hududlarda balandlik chegarasi keskin oshirilgan:<br><br>
+          • <span style="color:#fb923c; font-weight:700;">Navnihol, Olimlar MFY</span> — 5 qavatdan → 27 qavatga<br>
+          • <span style="color:#fb923c; font-weight:700;">Oltintepa MFY</span> — renovatsiya binosi → 16 qavatgacha<br>
+          • <span style="color:#fb923c; font-weight:700;">Beshyog'och MFY</span> — 9–12 qavatdan → 28–32 qavatga<br>
+          • <span style="color:#fb923c; font-weight:700;">Uchtepada</span> — 33 qavatgacha ruxsat berildi<br>
+          • <span style="color:#fb923c; font-weight:700;">Mirobod (A.Fitrat)</span> — 40 qavatgacha!<br><br>
+          Bu o'zgartirishlar qurilish kompaniyalari manfaatiga yo'naltirilgan bo'lib, shahar rivojlanishining uzoq muddatli manfaatlariga ziddir.
+        </div>
+      </div>
+
+      <div class="tod-card" style="border-color:rgba(34,197,94,0.3); background:rgba(34,197,94,0.05);">
+        <div class="tod-title" style="color:#4ade80;" id="tod4-title">✅ TAVSIYA: TOSHKENT UCHUN OPTIMAL MODEL</div>
+        <div class="tod-text" id="tod4-text">
+          Dunyo tajribasiga asoslangan yondashuv:<br><br>
+          • Markaziy hududlarda: max <span style="color:#4ade80; font-weight:700;">12 qavatgacha</span><br>
+          • Chekkadagi tumanlar: max <span style="color:#4ade80; font-weight:700;">5–9 qavat</span><br>
+          • Metro/Tramvay va BRT yonida: max <span style="color:#4ade80; font-weight:700;">12 qavat</span><br>
+          • Har bir yangi qurilish uchun yashil maydon majburiy bo'lishi kerak<br><br>
+          Zichlikni oshirish uchun balandlik emas, <span style="color:#4ade80; font-weight:700;">ixcham blok qurilishi</span> yaxshiroq yechimdir. Balkim shahar kalit nuqtalari uchun dominanta misolida nuqtaviy hududlar ko'zda tutilishi mumkin.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="map" style="flex:1;"></div>
+</div>
+
+<div class="warning-bar">
+  <div class="warning-dot"></div>
+  <span id="warning-text">
+    <strong>MUAMMO:</strong> 31 loyihadan 19 tasi TOD optimal chegarasidan (12 qavat) oshib ketgan · Jami qurilish maydoni: 2311 ga · Taxminiy investitsiya: $16.28 mlrd
+  </span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// TRANSLATIONS
+// ═══════════════════════════════════════════════
+const T = {
+  uz: {
+    'h-title': 'ARCHEMISTRY URBAN · TOSHKENT 2026',
+    'h-sub': 'VMM 09/26/83/0188-son · 03.03.2026 · Qurilish loyihalari tahlili',
+    'hs-projects': 'Loyiha',
+    'hs-invest': 'Investitsiya',
+    'hs-area': 'Ga yer',
+    'tab-btn-legend': 'LEGENDA',
+    'tab-btn-projects': 'LOYIHALAR',
+    'tab-btn-tod': 'TOD TAHLIL',
+    'leg-floors-title': 'Qavatlar bo\'yicha zonalar',
+    'leg-1': '1–12 qavat — Optimal (TOD me\'yori)',
+    'leg-2': '13–20 qavat — Yuqori zichlik',
+    'leg-3': '21–30 qavat — Haddan ziyod',
+    'leg-4': '30+ qavat — Kritik zichlik',
+    'leg-5': 'Sanoat zonasi',
+    'leg-size-title': 'Belgi o\'lchami',
+    'leg-size-desc': 'Doira kattaligi loyiha bahosiga (mln $) proporsional ravishda ko\'rsatilgan',
+    'leg-filter-title': 'Tuman filtri',
+    'fc-all': 'BARCHASI',
+    'tod1-title': '⚡ TOD — OPTIMAL ZICHLIK NIMA?',
+    'tod1-text': `Tranzitga yo'naltirilgan rivojlanish (TOD) bo'yicha dunyo amaliyotida shahar uchun optimal aholi zichligi:<br><br>
+          <span class="tod-hl">10,000–17,000 kishi/km²</span><br><br>
+          Bu — Parij, Barselona shaharlar darajasi. Ushbu zichlikka <span class="tod-hl">7–12 qavatli</span> binolar bilan erishiladi. Odamlar piyoda yurib barcha xizmatlardan foydalana oladi, ko'cha hayoti jonli bo'ladi.`,
+    'tod2-title': '⚠️ MUAMMO: HADDAN ORTIQ ZICHLIK',
+    'tod2-text': `Toshkentdagi aksariyat loyihalarda <span style="color:#ff6b78; font-weight:700;">20–40 qavatli</span> binolar rejalashtirilgan. Bunday zichlik quyidagi muammolarga olib keladi:<br><br>
+          • Suv, elektr, yo'l infratuzilmasini ortiqcha yuklaydi<br>
+          • Yashil maydonlar va ochiq hududlar kamayadi<br>
+          • Quyosh yorug'ligi va shamol aylanishi cheklanadi<br>
+          • Ijtimoiy muhit va qo'shnichilik munosabati yomonlashadi<br>
+          • Yer osti suvlari va zilzila oqibatlari xavfi ortadi`,
+    'tod3-title': '📊 SHAHAR BOSH REJASIGA O\'ZGARTIRISHLAR',
+    'tod3-text': `Qabul qilingan qarorga ko'ra quyidagi hududlarda balandlik chegarasi keskin oshirilgan:<br><br>
+          • <span style="color:#fb923c; font-weight:700;">Navnihol, Olimlar MFY</span> — 5 qavatdan → 27 qavatga<br>
+          • <span style="color:#fb923c; font-weight:700;">Oltintepa MFY</span> — renovatsiya binosi → 16 qavatgacha<br>
+          • <span style="color:#fb923c; font-weight:700;">Beshyog'och MFY</span> — 9–12 qavatdan → 28–32 qavatga<br>
+          • <span style="color:#fb923c; font-weight:700;">Uchtepada</span> — 33 qavatgacha ruxsat berildi<br>
+          • <span style="color:#fb923c; font-weight:700;">Mirobod (A.Fitrat)</span> — 40 qavatgacha!<br><br>
+          Bu o'zgartirishlar qurilish kompaniyalari manfaatiga yo'naltirilgan bo'lib, shahar rivojlanishining uzoq muddatli manfaatlariga ziddir.`,
+    'tod4-title': '✅ TAVSIYA: TOSHKENT UCHUN OPTIMAL MODEL',
+    'tod4-text': `Dunyo tajribasiga asoslangan yondashuv:<br><br>
+          • Markaziy hududlarda: max <span style="color:#4ade80; font-weight:700;">12 qavatgacha</span><br>
+          • Chekkadagi tumanlar: max <span style="color:#4ade80; font-weight:700;">5–9 qavat</span><br>
+          • Metro/Tramvay va BRT yonida: max <span style="color:#4ade80; font-weight:700;">12 qavat</span><br>
+          • Har bir yangi qurilish uchun yashil maydon majburiy bo'lishi kerak<br><br>
+          Zichlikni oshirish uchun balandlik emas, <span style="color:#4ade80; font-weight:700;">ixcham blok qurilishi</span> yaxshiroq yechimdir. Balkim shahar kalit nuqtalari uchun dominanta misolida nuqtaviy hududlar ko'zda tutilishi mumkin.`,
+    'warning-text': '<strong>MUAMMO:</strong> 31 loyihadan 19 tasi TOD optimal chegarasidan (12 qavat) oshib ketgan · Jami qurilish maydoni: 2311 ga · Taxminiy investitsiya: $16.28 mlrd',
+    popup_floor: 'Qavatlar',
+    popup_area: 'Yer maydoni',
+    popup_cost: 'Baho',
+    popup_project: 'Loyiha',
+    popup_district: 'Tuman',
+    floors_unit: 'qavat',
+    industrial: 'SANOAT',
+    warn_critical: '⚠ TOD chegarasidan kritik darajada oshib ketgan',
+    warn_high: '⚠ TOD optimal chegarasidan oshib ketgan',
+    ok_text: '✓ TOD me\'yoriga mos — optimal zichlik',
+  },
+  ru: {
+    'h-title': 'ARCHEMISTRY URBAN · ТАШКЕНТ 2026',
+    'h-sub': 'Пост. КМ 09/26/83/0188 · 03.03.2026 · Интерактивная карта строительства',
+    'hs-projects': 'Проектов',
+    'hs-invest': 'Инвестиции',
+    'hs-area': 'Га земли',
+    'tab-btn-legend': 'ЛЕГЕНДА',
+    'tab-btn-projects': 'ПРОЕКТЫ',
+    'tab-btn-tod': 'TOD АНАЛИЗ',
+    'leg-floors-title': 'Зоны по этажности',
+    'leg-1': '1–12 эт. — Оптимально (норма TOD)',
+    'leg-2': '13–20 эт. — Высокая плотность',
+    'leg-3': '21–30 эт. — Избыточная',
+    'leg-4': '30+ эт. — Критическая плотность',
+    'leg-5': 'Промышленная зона',
+    'leg-size-title': 'Размер маркера',
+    'leg-size-desc': 'Размер круга пропорционален стоимости проекта (млн $)',
+    'leg-filter-title': 'Фильтр по районам',
+    'fc-all': 'ВСЕ',
+    'tod1-title': '⚡ TOD — ЧТО ТАКОЕ ОПТИМАЛЬНАЯ ПЛОТНОСТЬ?',
+    'tod1-text': `По мировой практике транзитно-ориентированного развития (TOD) оптимальная плотность населения:<br><br>
+          <span class="tod-hl">10,000–17,000 чел/км²</span><br><br>
+          Это уровень Парижа и Барселоны. Достигается при <span class="tod-hl">7–12 этажной</span> застройке. Люди могут пешком пользоваться всеми сервисами, уличная жизнь активна.`,
+    'tod2-title': '⚠️ ПРОБЛЕМА: ИЗБЫТОЧНАЯ ПЛОТНОСТЬ',
+    'tod2-text': `В большинстве ташкентских проектов запланированы здания <span style="color:#ff6b78; font-weight:700;">20–40 этажей</span>. Это ведёт к:<br><br>
+          • Перегрузке водо-, электро- и дорожной инфраструктуры<br>
+          • Сокращению зелёных зон и открытых пространств<br>
+          • Ограничению солнечного освещения и вентиляции<br>
+          • Ухудшению социальной среды и соседских связей<br>
+          • Повышению рисков при паводках и землетрясениях`,
+    'tod3-title': '📊 ИЗМЕНЕНИЯ В ГЕНЕРАЛЬНОМ ПЛАНЕ',
+    'tod3-text': `По принятому решению высотные лимиты в следующих районах резко повышены:<br><br>
+          • <span style="color:#fb923c; font-weight:700;">МФЮ Навнихол, Олимлар</span> — с 5 этажей → до 27<br>
+          • <span style="color:#fb923c; font-weight:700;">МФЮ Олтинтепа</span> — реконструкция → до 16 этажей<br>
+          • <span style="color:#fb923c; font-weight:700;">МФЮ Бешёгоч</span> — с 9–12 → до 28–32 этажей<br>
+          • <span style="color:#fb923c; font-weight:700;">Учтепа</span> — разрешено до 33 этажей<br>
+          • <span style="color:#fb923c; font-weight:700;">Мирободский р-н (А.Фитрат)</span> — до 40 этажей!<br><br>
+          Эти изменения направлены в интересах застройщиков и противоречат долгосрочным интересам города.`,
+    'tod4-title': '✅ РЕКОМЕНДАЦИИ: ОПТИМАЛЬНАЯ МОДЕЛЬ ДЛЯ ТАШКЕНТА',
+    'tod4-text': `Подход, основанный на мировом опыте:<br><br>
+          • Центральные районы: макс. <span style="color:#4ade80; font-weight:700;">12 этажей</span><br>
+          • Периферийные районы: макс. <span style="color:#4ade80; font-weight:700;">5–9 этажей</span><br>
+          • Вдоль метро/трамвая и BRT: макс. <span style="color:#4ade80; font-weight:700;">12 этажей</span><br>
+          • Зелёные зоны при каждом новом строительстве — обязательны<br><br>
+          Для повышения плотности лучше использовать <span style="color:#4ade80; font-weight:700;">периметральную застройку</span>, а не высотность. Точечные доминанты возможны лишь в ключевых узлах города.`,
+    'warning-text': '<strong>ПРОБЛЕМА:</strong> 19 из 31 проекта превышают TOD-норму (12 эт.) · Площадь застройки: 2311 га · Инвестиции: $16.28 млрд',
+    popup_floor: 'Этажей',
+    popup_area: 'Площадь',
+    popup_cost: 'Стоимость',
+    popup_project: 'Проект',
+    popup_district: 'Район',
+    floors_unit: 'эт.',
+    industrial: 'ПРОМЗОНА',
+    warn_critical: '⚠ Критическое превышение нормы TOD',
+    warn_high: '⚠ Превышение оптимальной нормы TOD',
+    ok_text: '✓ Соответствует норме TOD — оптимальная плотность',
+  },
+  en: {
+    'h-title': 'ARCHEMISTRY URBAN · TASHKENT 2026',
+    'h-sub': 'CM Resolution 09/26/83/0188 · 03.03.2026 · Construction Projects Analysis',
+    'hs-projects': 'Projects',
+    'hs-invest': 'Investment',
+    'hs-area': 'Ha land',
+    'tab-btn-legend': 'LEGEND',
+    'tab-btn-projects': 'PROJECTS',
+    'tab-btn-tod': 'TOD ANALYSIS',
+    'leg-floors-title': 'Zones by Floors',
+    'leg-1': '1–12 fl. — Optimal (TOD standard)',
+    'leg-2': '13–20 fl. — High density',
+    'leg-3': '21–30 fl. — Excessive',
+    'leg-4': '30+ fl. — Critical density',
+    'leg-5': 'Industrial zone',
+    'leg-size-title': 'Marker size',
+    'leg-size-desc': 'Circle size is proportional to project value (mln $)',
+    'leg-filter-title': 'Filter by district',
+    'fc-all': 'ALL',
+    'tod1-title': '⚡ TOD — WHAT IS OPTIMAL DENSITY?',
+    'tod1-text': `According to global Transit-Oriented Development (TOD) practice, the optimal urban density is:<br><br>
+          <span class="tod-hl">10,000–17,000 residents/km²</span><br><br>
+          This is the level of Paris and Barcelona, achievable with <span class="tod-hl">7–12 story</span> buildings. Residents can walk to all services, and street life thrives.`,
+    'tod2-title': '⚠️ PROBLEM: EXCESSIVE DENSITY',
+    'tod2-text': `Most Tashkent projects plan <span style="color:#ff6b78; font-weight:700;">20–40 story</span> buildings, leading to:<br><br>
+          • Overloading of water, power, and road infrastructure<br>
+          • Reduction of green spaces and open areas<br>
+          • Limited sunlight and ventilation<br>
+          • Deterioration of social fabric and community bonds<br>
+          • Increased flood and earthquake vulnerability`,
+    'tod3-title': '📊 CHANGES TO THE MASTER PLAN',
+    'tod3-text': `Under the adopted resolution, height limits were sharply raised in these areas:<br><br>
+          • <span style="color:#fb923c; font-weight:700;">Navnihol, Olimlar MFY</span> — from 5 floors → to 27<br>
+          • <span style="color:#fb923c; font-weight:700;">Oltintepa MFY</span> — renovation → up to 16 floors<br>
+          • <span style="color:#fb923c; font-weight:700;">Beshyog'och MFY</span> — 9–12 → up to 28–32 floors<br>
+          • <span style="color:#fb923c; font-weight:700;">Uchtepa</span> — permitted up to 33 floors<br>
+          • <span style="color:#fb923c; font-weight:700;">Mirobod (A.Fitrat)</span> — up to 40 floors!<br><br>
+          These changes serve developer interests and contradict the city's long-term urban wellbeing.`,
+    'tod4-title': '✅ RECOMMENDATIONS: OPTIMAL MODEL FOR TASHKENT',
+    'tod4-text': `Evidence-based approach:<br><br>
+          • Central areas: max <span style="color:#4ade80; font-weight:700;">12 floors</span><br>
+          • Peripheral districts: max <span style="color:#4ade80; font-weight:700;">5–9 floors</span><br>
+          • Along metro/tram and BRT: max <span style="color:#4ade80; font-weight:700;">12 floors</span><br>
+          • Green space must be mandatory for every new development<br><br>
+          To increase density, <span style="color:#4ade80; font-weight:700;">perimeter block development</span> is preferred over height. Point dominants are acceptable only at key city nodes.`,
+    'warning-text': '<strong>ISSUE:</strong> 19 of 31 projects exceed the TOD standard (12 fl.) · Total area: 2,311 ha · Investment: $16.28B',
+    popup_floor: 'Floors',
+    popup_area: 'Area',
+    popup_cost: 'Value',
+    popup_project: 'Project',
+    popup_district: 'District',
+    floors_unit: 'fl.',
+    industrial: 'INDUSTRIAL',
+    warn_critical: '⚠ Critically exceeds TOD standard',
+    warn_high: '⚠ Exceeds TOD optimal standard',
+    ok_text: '✓ Meets TOD standard — optimal density',
+  }
+};
+
+let currentLang = 'uz';
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+  const tr = T[lang];
+  Object.keys(tr).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = tr[id];
+  });
+  renderProjects();
+  // Re-render markers to update popup labels
+  markers.forEach(({marker, p}) => {
+    marker.unbindPopup();
+    marker.bindPopup(buildPopup(p), {className: 'custom-popup', maxWidth: 300});
+  });
+}
+
+// ═══════════════════════════════════════════════
+// PROJECT DATA
+// ═══════════════════════════════════════════════
+const projects = [
+  {id:1, tuman:"Bektimir", mahalla:"\"Nurafshon\" va \"Mirishkor\" MFY", qavatlar:28, maydoni:150.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi, maishiy xizmat ko'rsatish binolari va ijtimoiy-ko'ngilochar ob'ektlar", baho:3000, tur:"turar", lat:41.255688, lng:69.368418},
+  {id:2, tuman:"Bektimir", mahalla:"\"Zabardast\" MFY", qavatlar:25, maydoni:58.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi (Bektimir siti)", baho:1200, tur:"turar", lat:41.216473, lng:69.343751},
+  {id:3, tuman:"Mirobod", mahalla:"\"Mingyo'rik\" va \"O'ybek\" MFY", qavatlar:28, maydoni:55.0, loyiha:"Zamonaviy turar joy va maishiy xizmat ko'rsatish majmuasi", baho:1000, tur:"turar", lat:41.296812, lng:69.281357},
+  {id:4, tuman:"Mirobod", mahalla:"\"A.Fitrat\" MFY", qavatlar:40, maydoni:14.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:307, tur:"turar", lat:41.273655, lng:69.297496},
+  {id:5, tuman:"Sergeli", mahalla:"\"So'g'diyona\" MFY", qavatlar:30, maydoni:44.7, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:1340, tur:"turar", lat:41.222659, lng:69.233644},
+  {id:6, tuman:"Chilonzor", mahalla:"Beshyo'g'och bozori hududi", qavatlar:30, maydoni:10.6, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi, maishiy xizmat ko'rsatish, mehmonxona va ijtimoiy", baho:461, tur:"turar", lat:41.305028, lng:69.250260},
+  {id:7, tuman:"Chilonzor", mahalla:"\"Beshyo'g'och\" MFY, Seul ko'chasi 120-uy", qavatlar:28, maydoni:2.5, loyiha:"Besh yulduzli mehmonxona, zamonaviy ko'p honadli turar joy majmuasi", baho:125, tur:"turar", lat:41.299787, lng:69.235478},
+  {id:8, tuman:"Chilonzor", mahalla:"\"Katta Chilonzor-2\" MFY", qavatlar:20, maydoni:4.5, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:100, tur:"turar", lat:41.278518, lng:69.224451},
+  {id:9, tuman:"Shayxontohur", mahalla:"\"Olim Xo'jaev\" MFY", qavatlar:25, maydoni:10.5, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:320, tur:"turar", lat:41.306992, lng:69.211258},
+  {id:10, tuman:"Shayxontohur", mahalla:"\"Cho'rsu\" MFY, A.Navoiy va Beruniy ko'chalari kesishmasida", qavatlar:29, maydoni:3.9, loyiha:"Besh yulduzli mehmonxona, zamonaviy ko'p honadli turar joy majmuasi", baho:600, tur:"turar", lat:41.321141, lng:69.231272},
+  {id:11, tuman:"Shayxontohur", mahalla:"\"Shayxontohur\" MFY, Labzak ko'chasi 1-uy", qavatlar:22, maydoni:2.45, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:150, tur:"turar", lat:41.326300, lng:69.259835},
+  {id:12, tuman:"Yashnobod", mahalla:"\"Amir Temur\" MFY hududi", qavatlar:20, maydoni:9.9, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:100, tur:"turar", lat:41.302061, lng:69.352195},
+  {id:13, tuman:"Olmazar", mahalla:"Chimbay ko'chasi 27-uy", qavatlar:9, maydoni:0.87, loyiha:"Talabalar yotoqxonasini tashkil etish", baho:25, tur:"ijtimoiy", lat:41.341481, lng:69.218966},
+  {id:14, tuman:"Olmazar", mahalla:"\"Shifokorlar\" MFY", qavatlar:12, maydoni:2.0, loyiha:"Mehmonxona, sog'lomlashtirish markazi, turar va noturar joy ob'ektlari", baho:50, tur:"turar", lat:41.354932, lng:69.173601},
+  {id:15, tuman:"Yashnobod", mahalla:"Farg'ona yo'li ko'chasi 25-uy", qavatlar:18, maydoni:7.5, loyiha:"Zamonaviy savdo markazi va ko'p qavatli turar joy majmuasi", baho:95, tur:"turar", lat:41.286099, lng:69.304943},
+  {id:16, tuman:"Shayxontohur", mahalla:"\"Oqlon\" va \"Olimpxo'jaev\" MFY", qavatlar:9, maydoni:233.8, loyiha:"Zamonaviy turar joy va maishiy xizmat ko'rsatish majmuasi", baho:50, tur:"turar", lat:41.306992, lng:69.211258},
+  {id:17, tuman:"Yashnobod", mahalla:"\"To'ytepa\" MFY hududi", qavatlar:12, maydoni:0.29, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:5, tur:"turar", lat:41.305874, lng:69.289385},
+  {id:18, tuman:"Yashnobod", mahalla:"\"Amir Temur\" MFY, Parkent ko'chasi", qavatlar:14, maydoni:6.8, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:20, tur:"turar", lat:41.299665, lng:69.349792},
+  {id:19, tuman:"Mirzo Ulug'bek", mahalla:"\"Oltintepa\" MFY hududi", qavatlar:16, maydoni:73.5, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:95, tur:"turar", lat:41.312729, lng:69.338919},
+  {id:20, tuman:"Mirzo Ulug'bek", mahalla:"\"Chingeldi\" MFY hududi", qavatlar:20, maydoni:245.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:206, tur:"turar", lat:41.330418, lng:69.449563},
+  {id:21, tuman:"Mirzo Ulug'bek", mahalla:"\"Navnihol\" MFY, Olimlar ko'chasi 56-58", qavatlar:27, maydoni:83.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:150, tur:"turar", lat:41.343979, lng:69.337139},
+  {id:22, tuman:"Mirobod", mahalla:"\"Baynalminal\" va \"Yangi Mirobod\" MFY, Avliyo ota ko'chasi 124-uy", qavatlar:35, maydoni:71.6, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish ob'ektlarini barpo etish", baho:1209, tur:"turar", lat:41.287817, lng:69.276650},
+  {id:23, tuman:"Olmazar", mahalla:"\"Miskin\" MFY, Yangi olmazar ko'chasi 1A-uy", qavatlar:18, maydoni:58.0, loyiha:"Zamonaviy biznes va savdo markazini barpo etish", baho:1260, tur:"tijorat", lat:41.350207, lng:69.248062},
+  {id:24, tuman:"Chilonzor", mahalla:"\"Ko'hna Kumarik\" MFY", qavatlar:20, maydoni:12.0, loyiha:"Zamonaviy turar joy majmuasi", baho:200, tur:"turar", lat:41.233883, lng:69.254368},
+  {id:25, tuman:"Yunusobod", mahalla:"\"Yuqori Darxon\" MFY", qavatlar:20, maydoni:15.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi", baho:300, tur:"turar", lat:41.241193, lng:69.208904},
+  {id:26, tuman:"Uchtepa", mahalla:"\"Katta Cho'ponota\" MFY", qavatlar:33, maydoni:50.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi va maishiy xizmat ko'rsatish", baho:500, tur:"turar", lat:41.288621, lng:69.163515},
+  {id:27, tuman:"Chilonzor", mahalla:"Lamborghini Residences", qavatlar:25, maydoni:3.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi", baho:400, tur:"turar", lat:41.296887, lng:69.239488},
+  {id:28, tuman:"Yangihayet", mahalla:"Gulshonobod MFY", qavatlar:20, maydoni:100.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi", baho:800, tur:"turar", lat:41.202315, lng:69.191486},
+  {id:29, tuman:"Mirzo Ulug'bek", mahalla:"Oktapa MFY", qavatlar:22, maydoni:30.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi", baho:350, tur:"turar", lat:41.357123, lng:69.316398},
+  {id:30, tuman:"Mirzo Ulug'bek", mahalla:"Amir Temur ko'chasi", qavatlar:18, maydoni:20.0, loyiha:"Zamonaviy ko'p honadli turar joy majmuasi", baho:280, tur:"turar", lat:41.342646, lng:69.285293},
+  {id:31, tuman:"Sergeli", mahalla:"Yangi Avlod Sanoat hududi", qavatlar:0, maydoni:120.0, loyiha:"Yangi avlod sanoat parki", baho:2000, tur:"sanoat", lat:41.194369, lng:69.274539}
+];
+
+// ═══════════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════════
+const map = L.map('map', { center: [41.2995, 69.2401], zoom: 12, zoomControl: true });
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CARTO',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+function getColor(fl, tur) {
+  if (tur === 'sanoat') return '#a78bfa';
+  if (fl <= 12) return '#22c55e';
+  if (fl <= 20) return '#ffd700';
+  if (fl <= 30) return '#ff8c00';
+  return '#ff4757';
+}
+function getRadius(baho) {
+  return Math.max(8, Math.min(28, Math.sqrt(baho) * 0.55));
+}
+function getWarning(fl) {
+  const tr = T[currentLang];
+  if (fl <= 0) return null;
+  if (fl > 30) return {type:'warn', text: tr.warn_critical};
+  if (fl > 12) return {type:'warn', text: tr.warn_high};
+  return {type:'ok', text: tr.ok_text};
+}
+
+function buildPopup(p) {
+  const tr = T[currentLang];
+  const color = getColor(p.qavatlar, p.tur);
+  const warn = getWarning(p.qavatlar);
+  const warnHtml = warn ? (warn.type === 'ok'
+    ? `<div class="popup-ok">${warn.text}</div>`
+    : `<div class="popup-warning">${warn.text}</div>`) : '';
+  const floorLabel = p.qavatlar > 0 ? `${p.qavatlar} ${tr.floors_unit}` : tr.industrial;
+  return `
+    <div>
+      <div class="popup-header-bar" style="background:${color}22; border-bottom:1px solid ${color}44; color:${color};">
+        <span>${tr.popup_district.toUpperCase()} · #${p.id}</span>
+        <span class="qavatlar-big">${floorLabel}</span>
+      </div>
+      <div class="popup-inner">
+        <div class="popup-title">${p.tuman} — ${p.mahalla}</div>
+        <div class="popup-row"><span>${tr.popup_area}</span><span>${p.maydoni} га</span></div>
+        <div class="popup-row"><span>${tr.popup_cost}</span><span>${p.baho.toLocaleString()} mln $</span></div>
+        <div class="popup-row"><span>${tr.popup_project}</span><span style="font-size:9px">${p.loyiha.substring(0,80)}${p.loyiha.length>80?'...':''}</span></div>
+        ${warnHtml}
+      </div>
+    </div>`;
+}
+
+let markers = [];
+let currentFilter = 'all';
+
+function renderMarkers() {
+  markers.forEach(({marker}) => map.removeLayer(marker));
+  markers = [];
+  const filtered = currentFilter === 'all' ? projects : projects.filter(p => p.tuman === currentFilter);
+  filtered.forEach(p => {
+    const color = getColor(p.qavatlar, p.tur);
+    const radius = getRadius(p.baho);
+    const marker = L.circleMarker([p.lat, p.lng], {
+      radius, fillColor: color, color: color, weight: 2,
+      opacity: 0.9, fillOpacity: 0.55
+    });
+    marker.bindPopup(buildPopup(p), {className: 'custom-popup', maxWidth: 300});
+    marker.on('click', () => {
+      document.querySelectorAll('.project-item').forEach(el => el.classList.remove('active'));
+      const item = document.getElementById('proj-' + p.id);
+      if (item) { item.classList.add('active'); item.scrollIntoView({behavior:'smooth', block:'nearest'}); }
+    });
+    marker.addTo(map);
+    markers.push({marker, p});
+  });
+}
+
+function renderProjects() {
+  const tr = T[currentLang];
+  const list = document.getElementById('project-list');
+  const filtered = currentFilter === 'all' ? projects : projects.filter(p => p.tuman === currentFilter);
+  list.innerHTML = filtered.map(p => {
+    const color = getColor(p.qavatlar, p.tur);
+    const flLabel = p.qavatlar > 0 ? `${p.qavatlar} ${tr.floors_unit}` : tr.industrial;
+    return `<div class="project-item" id="proj-${p.id}" onclick="flyTo(${p.id})">
+      <div class="proj-header">
+        <span class="proj-num">#${p.id} · ${p.tuman}</span>
+        <span class="proj-qavatlar" style="color:${color}">${flLabel}</span>
+      </div>
+      <div class="proj-location">${p.mahalla}</div>
+      <div class="proj-name">${p.baho.toLocaleString()} mln $ · ${p.maydoni} га</div>
+    </div>`;
+  }).join('');
+}
+
+function flyTo(id) {
+  const p = projects.find(x => x.id === id);
+  if (!p) return;
+  map.flyTo([p.lat, p.lng], 16, {duration: 0.8});
+  const m = markers.find(x => x.p.id === id);
+  if (m) {
+    m.marker.unbindPopup();
+    m.marker.bindPopup(buildPopup(p), {className: 'custom-popup', maxWidth: 300});
+    setTimeout(() => m.marker.openPopup(), 850);
+  }
+  document.querySelectorAll('.project-item').forEach(el => el.classList.remove('active'));
+  const item = document.getElementById('proj-' + id);
+  if (item) item.classList.add('active');
+}
+
+function filterTuman(tuman, btn) {
+  currentFilter = tuman;
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMarkers();
+  renderProjects();
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tab-btn-' + name).classList.add('active');
+}
+
+renderMarkers();
+renderProjects();
+</script>
+</body>
+</html>
