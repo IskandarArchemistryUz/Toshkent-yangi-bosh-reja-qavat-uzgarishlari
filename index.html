@@ -26,14 +26,20 @@
     --card-bg: rgba(13,21,37,0.97);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    width: 100%;
+  }
   body {
     background: var(--bg);
     color: var(--text);
     font-family: 'IBM Plex Mono', monospace;
-    height: 100vh;
+    height: 100svh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 
   /* HEADER */
@@ -108,7 +114,8 @@
   }
 
   /* MAIN LAYOUT */
-  .main { display: flex; flex: 1; overflow: hidden; }
+  .main { display: flex; flex: 1; overflow: hidden; position: relative; min-height: 0; }
+  #map { flex: 1; min-height: 0; }
 
   /* SIDEBAR */
   .sidebar {
@@ -340,6 +347,61 @@
     box-shadow: 0 2px 8px rgba(45,127,255,0.4);
   }
   .boundary-tooltip::before { display: none; }
+
+  /* MOBILE TOGGLE BUTTON */
+  .sidebar-toggle {
+    display: none;
+    background: var(--brand);
+    border: none;
+    color: #fff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  /* MOBILE RESPONSIVE */
+  @media (max-width: 768px) {
+    header {
+      padding: 7px 10px;
+      gap: 8px;
+    }
+    .header-title { font-size: 10px; }
+    .header-sub { display: none; }
+    .hstat { display: none; }
+    .sidebar-toggle { display: block; }
+    .lang-btn { padding: 4px 6px; font-size: 9px; }
+
+    .sidebar {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 88%;
+      max-width: 320px;
+      z-index: 999;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 6px 0 24px rgba(0,0,0,0.6);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .map-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 998;
+    }
+    .map-overlay.open { display: block; }
+
+    .warning-bar { font-size: 9px; padding: 5px 10px; }
+    .custom-popup .leaflet-popup-content { min-width: 200px; }
+  }
+
 </style>
 </head>
 <body>
@@ -358,6 +420,7 @@
     </div>
   </div>
   <div class="header-right">
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰ TAHLIL</button>
     <div class="hstat">
       <div class="hstat-val">31</div>
       <div class="hstat-label" id="hs-projects">Loyiha</div>
@@ -379,7 +442,8 @@
 </header>
 
 <div class="main">
-  <div class="sidebar">
+  <div class="map-overlay" id="map-overlay" onclick="toggleSidebar()"></div>
+  <div class="sidebar" id="sidebar">
     <div class="sidebar-tabs">
       <button class="tab-btn active" onclick="showTab('legend')" id="tab-btn-legend">LEGENDA</button>
       <button class="tab-btn" onclick="showTab('projects')" id="tab-btn-projects">LOYIHALAR</button>
@@ -478,7 +542,7 @@
     </div>
   </div>
 
-  <div id="map" style="flex:1;"></div>
+  <div id="map" style="flex:1; min-height:0;"></div>
 </div>
 
 <div class="warning-bar">
@@ -850,6 +914,18 @@ function showTab(name) {
 
 renderMarkers();
 renderProjects();
+
+// Mobil uchun xarita o'lchamini to'g'irlash
+setTimeout(() => map.invalidateSize(), 300);
+window.addEventListener('resize', () => map.invalidateSize());
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('map-overlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('open');
+  setTimeout(() => map.invalidateSize(), 300);
+}
 </script>
 </body>
 </html>
